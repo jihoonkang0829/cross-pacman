@@ -79,7 +79,14 @@ class Game:
         """
         Draws each tile of the grid, using the draw method of pacman and ghost
         """
-        raise NotImplementedError("Game.draw() is not implemented.")
+        self.ghosts[0].draw()
+        self.ghosts[1].draw()
+        self.ghosts[2].draw()
+        self.ghosts[3].draw()
+        self.ghosts[4].draw()
+        self.pacman.draw()
+        
+        #raise NotImplementedError("Game.draw() is not implemented.")
 
     def handle_events(self, events: List[pygame.event]):
         """
