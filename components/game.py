@@ -98,7 +98,15 @@ class Game:
             list of events to be handled
 
         """
-        raise NotImplementedError("Game.handle_events() is not implemented.")
+        if events.type == pygame.KEYDOWN:
+            if events.key == pygame.K_LEFT:
+                Pacman.set_direction(self.pacman, Directions.LEFT)
+            elif events.key == pygame.K_RIGHT:
+                Pacman.set_direction(self.pacman, Directions.RIGHT)
+            elif events.key == pygame.K_UP:
+                Pacman.set_direction(self.pacman, Directions.UP)
+            elif events.key == pygame.K_DOWN:
+                Pacman.set_direction(self.pacman, Directions.DOWN)
 
     def update(self):
         """
