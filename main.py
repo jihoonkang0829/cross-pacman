@@ -1,6 +1,7 @@
 import pygame
 from constants import BACKGROUND_COLOR, GRID_SIZE, WINDOW_SIZE, WINDOW_TITLE
 from components.game import Game
+import numpy as np
 
 # Main loop to run the pacman game
 
