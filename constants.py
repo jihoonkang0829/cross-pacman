@@ -4,7 +4,7 @@ BACKGROUND_COLOR = (0, 0, 0)
 WALL_COLOR = (25, 25, 166)
 
 GRID_SIZE = 16
-WINDOW_SIZE = (800, 800)
+WINDOW_SIZE = (GRID_SIZE*30, GRID_SIZE*30)
 WINDOW_TITLE = "Cross Pacman"
 
 # Image directories
@@ -35,3 +35,5 @@ GHOST_MINT_DIR = IMAGE_DIR + 'ghost-mint.png'
 STRAWBERRY_DIR = IMAGE_DIR + 'strawberry.png'
 APPLE_DIR = IMAGE_DIR + 'apple.png'
 DOT_DIR = IMAGE_DIR + 'dot.png'
+
+MAP_DIR = IMAGE_DIR + 'map.txt'
