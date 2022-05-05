@@ -1,18 +1,23 @@
 # Game component of the pacman game.
 import pygame
+import sys
 from typing import List
 from pygame.locals import *
 from components.ghost import Ghost
 from components.pacman import Pacman
-from constants import APPLE_DIR, BACKGROUND_COLOR, DOT_DIR, GRID_SIZE, MAP_DIR, STRAWBERRY_DIR, WALL_COLOR
+from constants import (APPLE_DIR, BACKGROUND_COLOR, DOT_DIR, GRID_SIZE, MAP_DIR,
+                       STRAWBERRY_DIR, WALL_COLOR, STRAWBERRY_POINT, APPLE_POINT, DOT_POINT,
+                       PACMAN_INIT_X, PACMAN_INIT_Y, GHOST_RED_INIT_X, GHOST_RED_INIT_Y,
+                       GHOST_BLUE_INIT_X, GHOST_BLUE_INIT_Y, GHOST_MINT_INIT_X, GHOST_MINT_INIT_Y,
+                       GHOST_PINK_INIT_X, GHOST_PINK_INIT_Y, GHOST_ORANGE_INIT_X,
+                       GHOST_ORANGE_INIT_Y)
 from enums.ghost_color import GhostColor
 from enums.tiles import Tiles
 import numpy as np
 
 
-
 class Game:
-    def __init__(self, width, height):
+    def __init__(self, screen, width, height):
         """
         Initializes the game object.
 
@@ -27,104 +32,117 @@ class Game:
         # Add more member variables if needed
         self.width = width
         self.height = height
+        self.screen = screen
         self.score = 0
         self.lives = 3
         self.level = 1
-        self.gameDisplay = pygame.display.set_mode((width,height))
+        self.boardarray = np.loadtxt(MAP_DIR, dtype=int).transpose()
+        self.game_win = False
+        self.game_over = False
 
-        # TODO: Modify initial position coordinates of the pacman and the ghosts
         self.pacman = Pacman(
-            x=self.width // 2,
-            y=self.height // 2,
+            x= PACMAN_INIT_X,
+            y= PACMAN_INIT_Y,
             width=self.width,
             height=self.height,
+            boardarray=self.boardarray
+
         )
-        self.ghosts = [
+        self.ghosts = {
+            GhostColor.RED:
             Ghost(
-                x=self.width // 2,
-                y=self.height // 2,
+                x=GHOST_RED_INIT_X,
+                y=GHOST_RED_INIT_Y,
                 width=self.width,
                 height=self.height,
                 color=GhostColor.RED,
             ),
+            GhostColor.PINK:
             Ghost(
-                x=self.width // 2,
-                y=self.height // 2,
+                x=GHOST_PINK_INIT_X,
+                y=GHOST_PINK_INIT_Y,
                 width=self.width,
                 height=self.height,
                 color=GhostColor.PINK,
             ),
+            GhostColor.ORANGE:
             Ghost(
-                x=self.width // 2,
-                y=self.height // 2,
+                x=GHOST_ORANGE_INIT_X,
+                y=GHOST_ORANGE_INIT_Y,
                 width=self.width,
                 height=self.height,
                 color=GhostColor.ORANGE,
             ),
+            GhostColor.BLUE:
             Ghost(
-                x=self.width // 2,
-                y=self.height // 2,
+                x=GHOST_BLUE_INIT_X,
+                y=GHOST_BLUE_INIT_Y,
                 width=self.width,
                 height=self.height,
                 color=GhostColor.BLUE,
             ),
+            GhostColor.MINT:
             Ghost(
-                x=self.width // 2,
-                y=self.height // 2,
+                x=GHOST_MINT_INIT_X,
+                y=GHOST_MINT_INIT_Y,
                 width=self.width,
                 height=self.height,
                 color=GhostColor.MINT,
             ),
-        ]
-        self.dots = []
-        self.strawberries = []
-        self.apples = []
-        self.walls = []
+        }
+        self.dots = set([(x, y) for x in range(self.width) for y in range(
+            self.height) if self.boardarray[x][y] == Tiles.DOT.value])
+        self.strawberries = set([(x, y) for x in range(self.width) for y in range(
+            self.height) if self.boardarray[x][y] == Tiles.STRAWBERRY.value])
+        self.apples = set([(x, y) for x in range(self.width) for y in range(
+            self.height) if self.boardarray[x][y] == Tiles.APPLE.value])
+        self.walls = set([(x, y) for x in range(self.width) for y in range(
+            self.height) if self.boardarray[x][y] == Tiles.WALL.value])
+        self.ghost_prev_pos = {
+            GhostColor.RED: ((GHOST_RED_INIT_X, GHOST_RED_INIT_Y), Tiles.EMPTY.value),
+            GhostColor.PINK: ((GHOST_PINK_INIT_X, GHOST_PINK_INIT_Y), Tiles.EMPTY.value),
+            GhostColor.ORANGE: ((GHOST_ORANGE_INIT_X, GHOST_ORANGE_INIT_Y), Tiles.EMPTY.value),
+            GhostColor.BLUE: ((GHOST_BLUE_INIT_X, GHOST_BLUE_INIT_Y), Tiles.EMPTY.value),
+            GhostColor.MINT: ((GHOST_MINT_INIT_X, GHOST_MINT_INIT_Y), Tiles.EMPTY.value)
+        }
+        self.pacman_prev_pos = ((PACMAN_INIT_X, PACMAN_INIT_Y), Tiles.EMPTY.value)
 
     def draw(self):
         """
         Draws each tile of the grid, using the draw method of pacman and ghost
         """
-        self.gameDisplay.fill(BACKGROUND_COLOR)
-        ghost0_coord, ghost0_dir = self.ghosts[0].draw()
-        ghost1_coord, ghost1_dir = self.ghosts[1].draw()
-        ghost2_coord, ghost2_dir = self.ghosts[2].draw()
-        ghost3_coord, ghost3_dir = self.ghosts[3].draw()
-        ghost4_coord, ghost4_dir = self.ghosts[4].draw()
-        pacman_coord, pacman_dir = self.pacman.draw()
-        boardarray = np.loadtxt(MAP_DIR, dtype=int)
-        for y in range( boardarray.shape[0] ):
-            for x in range( boardarray.shape[1] ):
-                # draw tile at (x,y)
-                id = boardarray[x,y]        # id of tile indicates which sprite to be printed on game
-                if id == Tiles.WALL:        # if id is wall, print wall on designated grid
-                    wall = Rect( x * GRID_SIZE, y * GRID_SIZE, GRID_SIZE, GRID_SIZE )
-                    pygame.draw.rect( self.gameDisplay, WALL_COLOR, wall )
-                elif id == Tiles.APPLE:
-                    applecoord = [x * GRID_SIZE, y * GRID_SIZE]
-                    self.gameDisplay.blit(pygame.image.load(APPLE_DIR), applecoord)
-                elif id == Tiles.STRAWBERRY:
-                    strawcoord = [x * GRID_SIZE, y * GRID_SIZE]
-                    self.gameDisplay.blit(pygame.image.load(STRAWBERRY_DIR), strawcoord)
-                elif id == Tiles.DOT:
-                    dotcoord = [x * GRID_SIZE, y * GRID_SIZE]
-                    self.gameDisplay.blit(pygame.image.load(DOT_DIR), dotcoord)
-                elif id == Tiles.GHOST_RED:
-                    self.gameDisplay.blit(pygame.image.load(ghost0_dir), ghost0_coord*GRID_SIZE)
-                elif id == Tiles.GHOST_PINK:
-                    self.gameDisplay.blit(pygame.image.load(ghost1_dir), ghost1_coord*GRID_SIZE)
-                elif id == Tiles.GHOST_ORANGE:
-                    self.gameDisplay.blit(pygame.image.load(ghost2_dir), ghost2_coord*GRID_SIZE)
-                elif id == Tiles.GHOST_BLUE:
-                    self.gameDisplay.blit(pygame.image.load(ghost3_dir), ghost3_coord*GRID_SIZE)
-                elif id == Tiles.GHOST_MINT:
-                    self.gameDisplay.blit(pygame.image.load(ghost4_dir), ghost4_coord*GRID_SIZE)
-                elif id == Tiles.PLAYER:
-                    self.gameDisplay.blit(pygame.image.load(pacman_dir), pacman_coord)
 
-        #raise NotImplementedError("Game.draw() is not implemented.")
+        for y in range(self.boardarray.shape[0]):
+            for x in range(self.boardarray.shape[1]):
 
-    def handle_events(self, events: List[pygame.event]):
+                id = self.boardarray[x, y]
+                coord = (x * GRID_SIZE, y * GRID_SIZE)
+
+                if id == Tiles.WALL.value:
+                    pygame.draw.rect(self.screen, WALL_COLOR, (coord, (GRID_SIZE, GRID_SIZE)))
+
+                elif id == Tiles.APPLE.value:
+                    self.screen.blit(
+                        pygame.image.load(APPLE_DIR), coord)
+
+                elif id == Tiles.STRAWBERRY.value:
+                    self.screen.blit(
+                        pygame.image.load(STRAWBERRY_DIR), coord)
+
+                elif id == Tiles.DOT.value:
+                    self.screen.blit(pygame.image.load(DOT_DIR), coord)
+
+                elif id in [ghost.value for ghost in self.ghosts.keys()]:
+                    _, ghost_dir = self.ghosts[GhostColor(id)].draw()
+                    self.screen.blit(pygame.image.load(
+                        ghost_dir), coord)
+
+                elif id == Tiles.PLAYER.value:
+                    _, pacman_dir = self.pacman.draw()
+                    self.screen.blit(pygame.image.load(
+                        pacman_dir), coord)
+
+    def handle_events(self, events: List[pygame.event.Event]):
         """
         Handles events for the game.
 
@@ -134,26 +152,58 @@ class Game:
             list of events to be handled
 
         """
-        if events.type == pygame.KEYDOWN:
-            if events.key == pygame.K_LEFT:
-                self.pacman.set_direction(Directions.LEFT)
-            elif events.key == pygame.K_RIGHT:
-                self.pacman.set_direction(Directions.RIGHT)
-            elif events.key == pygame.K_UP:
-                self.pacman.set_direction(Directions.UP)
-            elif events.key == pygame.K_DOWN:
-                self.pacman.set_direction(Directions.DOWN)
-            elif events.key == pygame.K_ESCAPE
+        for event in events:
+            if event.type == pygame.KEYDOWN:
+                if event.key in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN):
+                    self.pacman.move(event)
+
+            if event.type == pygame.QUIT or event.type == pygame.K_ESCAPE:
                 pygame.quit()
+                sys.exit()
 
     def update(self):
         """
         Updates the game state.
         """
-        self.pacman.update()
-        self.ghosts[0].update()
-        self.ghosts[1].update()
-        self.ghosts[2].update()
-        self.ghosts[3].update()
-        self.ghosts[4].update()
 
+        for ghost in self.ghosts.values():
+            ghost.move(self.boardarray)
+
+        pacman_pos = self.pacman.get_position()
+        ghosts_coords = [ghost.get_position()
+                         for ghost in self.ghosts.values()]
+
+        self.boardarray[self.pacman_prev_pos[0][0]][self.pacman_prev_pos[0][1]] = Tiles.EMPTY.value
+        self.pacman_prev_pos = (pacman_pos, self.boardarray[pacman_pos[0]][pacman_pos[1]])
+        self.boardarray[pacman_pos[0]][pacman_pos[1]] = Tiles.PLAYER.value
+        
+        for prev_pos, tile_type in self.ghost_prev_pos.values():
+            self.boardarray[prev_pos[0]][prev_pos[1]] = Tiles.EMPTY.value if prev_pos not in self.dots else Tiles.DOT.value
+
+        for color, ghost in self.ghosts.items():
+            ghost_pos = ghost.get_position()
+            self.ghost_prev_pos[color] = (ghost_pos, self.boardarray[ghost_pos[0]][ghost_pos[1]])
+            self.boardarray[ghost_pos[0]][ghost_pos[1]] = int(color)
+
+
+        if pacman_pos in ghosts_coords:
+            self.lives -= 1
+
+        if pacman_pos in self.strawberries:
+            self.score += STRAWBERRY_POINT
+            self.strawberries.remove(pacman_pos)
+            self.boardarray[pacman_pos[0]][pacman_pos[1]] = Tiles.EMPTY.value
+
+        if pacman_pos in self.apples:
+            self.score += APPLE_POINT
+            self.apples.remove(pacman_pos)
+            self.boardarray[pacman_pos[0]][pacman_pos[1]] = Tiles.EMPTY.value
+
+        if pacman_pos in self.dots:
+            self.score += DOT_POINT
+            self.dots.remove(pacman_pos)
+            self.boardarray[pacman_pos[0]][pacman_pos[1]] = Tiles.EMPTY.value
+
+        self.game_over = self.lives == 0
+        self.game_win = sum([len(self.dots), len(
+            self.strawberries), len(self.apples)]) == 0

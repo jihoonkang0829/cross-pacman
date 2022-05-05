@@ -3,12 +3,13 @@ from pygame import event
 from typing import Tuple
 from enums.directions import Directions
 from constants import (PACMAN_DOWN_1_DIR, PACMAN_LEFT_1_DIR, PACMAN_RIGHT_1_DIR, PACMAN_UP_1_DIR)
+from enums.tiles import Tiles
 
 # Pacman class
 
 
 class Pacman:
-    def __init__(self, x, y, width, height, direction=Directions.RIGHT, position):
+    def __init__(self, x, y, width, height, boardarray, direction=Directions.RIGHT):
         """
         Initializes the pacman object.
         Params
@@ -21,6 +22,8 @@ class Pacman:
             width of the grid
         height : int
             height of the grid
+        boardarray : np.ndarray
+            2d numpy array of the board
         direction : Directions
             direction enum of the pacman. Default value is Directions.RIGHT
         """
@@ -31,14 +34,17 @@ class Pacman:
         self.width = width
         self.height = height
         self.direction = direction
-        self.game_running = True
-        self.position = position
-        self.directory = (directory for directory in (
-            PACMAN_DOWN_1_DIR,
-            PACMAN_LEFT_1_DIR,
-            PACMAN_RIGHT_1_DIR,
-            PACMAN_UP_1_DIR
-        ) if self.direction.value in directory)[0]
+        self.position = (x, y)
+        self.boardarray = boardarray
+
+        self.direction_image_map = {
+            Directions.UP: PACMAN_UP_1_DIR,
+            Directions.DOWN: PACMAN_DOWN_1_DIR,
+            Directions.LEFT: PACMAN_LEFT_1_DIR,
+            Directions.RIGHT: PACMAN_RIGHT_1_DIR
+        }
+
+        self.directory = self.direction_image_map[self.direction]
 
     def move(self, event: event):
         """
@@ -48,15 +54,29 @@ class Pacman:
         event : pygame.event
             event object from pygame. This is used to check which key is pressed from the user.
         """
-        for event in pygame.event.get():
-            if keys[pygame.K_LEFT] and x>0:
+        if event.type == pygame.KEYDOWN:
+            if (event.key == pygame.K_LEFT and 
+            0 <= self.x - 1 < self.width and
+            self.boardarray[self.y][self.x - 1] != Tiles.WALL.value):
                 self.x -= 1
-            if keys[pygame.K_RIGHT] and x<width:
+
+            elif (event.key == pygame.K_RIGHT and
+            0 <= self.x + 1 < self.width and
+            self.boardarray[self.y][self.x + 1] != Tiles.WALL.value):
                 self.x += 1
-            if keys[pygame.K_UP] and y>0:
-                self.y += 1
-            if keys[pygame.K_DOWN] and y<height:
+
+            elif (event.key == pygame.K_UP and
+            0 <= self.y - 1 < self.height and
+            self.boardarray[self.y - 1][self.x] != Tiles.WALL.value):
                 self.y -= 1
+
+            elif (event.key == pygame.K_DOWN and
+            0 <= self.y + 1 < self.height and
+            self.boardarray[self.y + 1][self.x] != Tiles.WALL.value):
+                self.y += 1
+
+        self.position = (self.x, self.y)
+
     def draw(self) -> Tuple[Tuple[int, int], str]:
         """
         Returns the position coordinate and the directory of the image to be drawn.\\
@@ -67,20 +87,13 @@ class Pacman:
                 str : directory of the image to be drawn
             ]
         """
-        position_coord = Tuple(self.x,self.y)
-        return (position_coord, self.directory)
+        return (self.position, self.directory)
 
     def get_position(self) -> Tuple[int, int]:
-        return (self.x, self.y)
+        return self.position
 
     def get_direction(self) -> Directions:
         return self.direction
 
     def set_direction(self, direction: Directions):
         self.direction = direction
-
-    def is_game_end(self) -> bool:
-        """
-        Returns True if the game is over.
-        """
-        return not self.game_running

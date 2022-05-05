@@ -20,14 +20,16 @@ def main():
     clock = pygame.time.Clock()
 
     # Set the FPS
-    fps = 60
+    fps = 10
 
     # Create the game object
-    game = Game(width=window_size[0] // GRID_SIZE,
+    game = Game(
+        screen,
+        width=window_size[0] // GRID_SIZE,
                 height=window_size[1] // GRID_SIZE)
 
     # Set the game loop to run
-    running = game.is_running()
+    running = True
 
     # Main game loop
     while running:
@@ -46,11 +48,15 @@ def main():
         # Update the screen
         pygame.display.flip()
 
-        # Update the game
+        pygame.display.update()
+        # # Update the game
         game.update()
+        
+
 
         # Check if the game is over
-        running = game.is_running()
+        running = not (game.game_over or game.game_win)
+
 
     # Quit pygame
     pygame.quit()
